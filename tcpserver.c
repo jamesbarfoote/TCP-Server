@@ -18,6 +18,9 @@ void eatZombies(int n){
 int main(int argc, char *argv[]){
   int sock, length, msgsock, status, newsockfd;
   struct sockaddr_in server, client;
+  int data;
+  char buf[bufsize];
+
 
   // for forking, and cleaning up zombie child state afterwards
   // You must not change this code.
@@ -29,6 +32,7 @@ int main(int argc, char *argv[]){
 
   // Create a socket (see Lab 2) - it is exactly the same for a server!
   int sockfd = socket(AF_INET, SOCK_STREAM, 1);
+  fprintf(stderr,"created socket\n");
 
   // Next, create the socket addressing structure
   server.sin_family = AF_INET;
@@ -37,25 +41,42 @@ int main(int argc, char *argv[]){
 
   // Next you need to BIND your socket.
   bind(sockfd, (struct sockaddr *)&server, sizeof(server));
+  fprintf(stderr,"bound socket\n");
 
   // Right, now we are in the main server loop.
   // YOUR CODE HERE
 
   // Start by listening
   listen(sockfd, 5);
+  fprintf(stderr,"listening\n");
 
   while(1){
 
     // you need to accept the connection request
     int clientlen = sizeof(client);
-  newsockfd = accept(sockfd, (struct sockaddr *) &client, &clientlen);
-
+    newsockfd = accept(sockfd, (struct sockaddr *) &client, &clientlen);
+    fprintf(stderr,"accepting\n");
     // the next call makes a new child process that will actually handle the client.
     id = fork();
-
+    fprintf(stderr,"forked\n");
     // when id == 0, this is the child and needs to do the work for the server.
+    if(id == 0)
+    {
+      data = read(newsockfd, buf, bufsize);
+      //printf("Message: %s\n",buf);
+      fprintf(stderr,"forked\n");
+      data = write(newsockfd,"Message Recieved",18);
+      if (data < 0) error("ERROR writing to socket");
+      exit(0);
+    }
+
     // when if > 0, this is the parent, and it should just loop around,
     // when id < 0, we had an error.
+    if(id < 0)
+    {
+      fprintf(stderr,"ERROR when trying to accept\n");
+      exit(0);
+    }
 
     // Your code here for the child process, that will read from the connection socket, process the data
     // write back to the socket, and then close and finally call exit(0) when done.
