@@ -32,6 +32,10 @@ int main(int argc, char *argv[]){
 
   // Create a socket (see Lab 2) - it is exactly the same for a server!
   int sockfd = socket(AF_INET, SOCK_STREAM, 1);
+  if(sockfd < 0)
+  {
+    fprintf(stderr,"Failed creating socket\n");
+  }
   fprintf(stderr,"created socket\n");
 
   // Next, create the socket addressing structure
@@ -40,7 +44,10 @@ int main(int argc, char *argv[]){
   server.sin_port = htons(atoi(argv[1])); // this time 1st arg is port#
 
   // Next you need to BIND your socket.
-  bind(sockfd, (struct sockaddr *)&server, sizeof(server));
+  if(bind(sockfd, (struct sockaddr *)&server, sizeof(server)) < 0)
+  {
+    fprintf(stderr,"Failed to bind\n");
+  }
   fprintf(stderr,"bound socket\n");
 
   // Right, now we are in the main server loop.
@@ -54,8 +61,14 @@ int main(int argc, char *argv[]){
 
     // you need to accept the connection request
     int clientlen = sizeof(client);
-    newsockfd = accept(sockfd, (struct sockaddr *) &client, &clientlen);
-    fprintf(stderr,"accepting\n");
+    if(newsockfd = accept(sockfd, (struct sockaddr *) &client, &clientlen) < 0){fprintf(stderr,"ERROR accepting\n"); exit(0); }
+    if(newsockfd == -1)
+    {
+      fprintf(stderr,"Failed to accept connection\n");
+    }
+    else{
+      fprintf(stderr,"accepted connecttion\n");
+    }
     // the next call makes a new child process that will actually handle the client.
     id = fork();
     fprintf(stderr,"forked\n");
@@ -64,10 +77,14 @@ int main(int argc, char *argv[]){
     {
       data = read(newsockfd, buf, bufsize);
       //printf("Message: %s\n",buf);
-      fprintf(stderr,"forked\n");
-      data = write(newsockfd,"Message Recieved",18);
-      if (data < 0) error("ERROR writing to socket");
-      exit(0);
+      if(data > 0){
+        data = write(newsockfd,"Message Recieved",18);
+      }
+      if (data < 0)
+      {
+        error("ERROR writing to socket");
+        exit(0);
+      }
     }
 
     // when if > 0, this is the parent, and it should just loop around,
