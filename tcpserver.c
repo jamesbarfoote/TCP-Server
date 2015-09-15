@@ -32,11 +32,14 @@ int main(int argc, char *argv[]){
 
   // Create a socket (see Lab 2) - it is exactly the same for a server!
   int sockfd = socket(AF_INET, SOCK_STREAM, 1);
+  
   if(sockfd < 0)
   {
     fprintf(stderr,"Failed creating socket\n");
   }
-  fprintf(stderr,"created socket\n");
+  elseif (sockfd >= 0){
+    fprintf(stderr,"created socket\n");
+  }
 
   // Next, create the socket addressing structure
   server.sin_family = AF_INET;
@@ -57,49 +60,52 @@ int main(int argc, char *argv[]){
   listen(sockfd, 5);
   fprintf(stderr,"listening\n");
 
-  while(1){
+  //while(1){
 
-    // you need to accept the connection request
-    int clientlen = sizeof(client);
-    if(newsockfd = accept(sockfd, (struct sockaddr *) &client, &clientlen) < 0){fprintf(stderr,"ERROR accepting\n"); exit(0); }
-    if(newsockfd == -1)
-    {
-      fprintf(stderr,"Failed to accept connection\n");
+  // you need to accept the connection request
+  int clientlen = sizeof(client);
+  if(newsockfd = accept(sockfd, (struct sockaddr *) &client, &clientlen) < 0)
+  {
+    fprintf(stderr,"ERROR accepting\n");
+  }
+  if(newsockfd == -1)
+  {
+    fprintf(stderr,"Failed to accept connection\n");
+  }
+  else{
+    fprintf(stderr,"accepted connection\n");
+  }
+  // the next call makes a new child process that will actually handle the client.
+  id = fork();
+  fprintf(stderr,"forked\n");
+  // when id == 0, this is the child and needs to do the work for the server.
+  if(id == 0)
+  {
+    data = read(newsockfd, buf, bufsize);
+    //printf("Message: %s\n",buf);
+    if(data > 0){
+      data = write(newsockfd,"Message Recieved",18);
     }
-    else{
-      fprintf(stderr,"accepted connecttion\n");
-    }
-    // the next call makes a new child process that will actually handle the client.
-    id = fork();
-    fprintf(stderr,"forked\n");
-    // when id == 0, this is the child and needs to do the work for the server.
-    if(id == 0)
+    if (data < 0)
     {
-      data = read(newsockfd, buf, bufsize);
-      //printf("Message: %s\n",buf);
-      if(data > 0){
-        data = write(newsockfd,"Message Recieved",18);
-      }
-      if (data < 0)
-      {
-        error("ERROR writing to socket");
-        exit(0);
-      }
-    }
-
-    // when if > 0, this is the parent, and it should just loop around,
-    // when id < 0, we had an error.
-    if(id < 0)
-    {
-      fprintf(stderr,"ERROR when trying to accept\n");
+      error("ERROR writing to socket");
       exit(0);
     }
-
-    // Your code here for the child process, that will read from the connection socket, process the data
-    // write back to the socket, and then close and finally call exit(0) when done.
-
-    // Note:  make sure the parent process (id > 0) does not execute this code, but immediately loops back
-    // around (via the while) to get another connection request.
-
   }
+
+  // when if > 0, this is the parent, and it should just loop around,
+  // when id < 0, we had an error.
+  if(id < 0)
+  {
+    fprintf(stderr,"ERROR when trying to accept\n");
+    exit(0);
+  }
+
+  // Your code here for the child process, that will read from the connection socket, process the data
+  // write back to the socket, and then close and finally call exit(0) when done.
+
+  // Note:  make sure the parent process (id > 0) does not execute this code, but immediately loops back
+  // around (via the while) to get another connection request.
+
+  //  }
 }
