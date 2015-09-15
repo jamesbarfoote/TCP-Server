@@ -31,13 +31,13 @@ int main(int argc, char *argv[]){
   // OK, NWEN 243 code starts here.
 
   // Create a socket (see Lab 2) - it is exactly the same for a server!
-  int sockfd = socket(AF_INET, SOCK_STREAM, 1);
-  
+  int sockfd = socket(AF_INET, SOCK_STREAM, 0);
+
   if(sockfd < 0)
   {
     fprintf(stderr,"Failed creating socket\n");
   }
-  elseif (sockfd >= 0){
+  else{
     fprintf(stderr,"created socket\n");
   }
 
@@ -51,7 +51,9 @@ int main(int argc, char *argv[]){
   {
     fprintf(stderr,"Failed to bind\n");
   }
-  fprintf(stderr,"bound socket\n");
+  else {
+    fprintf(stderr,"bound socket\n");
+  }
 
   // Right, now we are in the main server loop.
   // YOUR CODE HERE
@@ -68,26 +70,24 @@ int main(int argc, char *argv[]){
   {
     fprintf(stderr,"ERROR accepting\n");
   }
-  if(newsockfd == -1)
-  {
-    fprintf(stderr,"Failed to accept connection\n");
-  }
   else{
     fprintf(stderr,"accepted connection\n");
   }
   // the next call makes a new child process that will actually handle the client.
   id = fork();
-  fprintf(stderr,"forked\n");
+
   // when id == 0, this is the child and needs to do the work for the server.
   if(id == 0)
   {
     data = read(newsockfd, buf, bufsize);
-    //printf("Message: %s\n",buf);
+    printf("Message: %s\n",buf);
     if(data > 0){
+      fprintf(stderr,"sending ack\n");
       data = write(newsockfd,"Message Recieved",18);
     }
     if (data < 0)
     {
+      fprintf(stderr,"error\n");
       error("ERROR writing to socket");
       exit(0);
     }
