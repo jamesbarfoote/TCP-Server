@@ -12,7 +12,6 @@ void processClient(int socket);
 
 void eatZombies(int n){
   // This function removes the zombie process state left
-  // after the child exits. Learn about this in NWEN 301!
 
   wait3(NULL,WNOHANG,NULL); // Nom Nom
 }
@@ -20,23 +19,16 @@ void eatZombies(int n){
 int main(int argc, char *argv[]){
   int sock, length, msgsock, status, newsockfd, n;
   struct sockaddr_in server, client;
-  int data;
-  char buf[bufsize];
-  char ch;
 
 
   // for forking, and cleaning up zombie child state afterwards
-  // You must not change this code.
 
   pid_t id;
   signal(SIGCHLD, &eatZombies);
 
-  // OK, NWEN 243 code starts here.
+  int sockfd = socket(AF_INET, SOCK_STREAM, 0);//Set up a new socket
 
-  // Create a socket (see Lab 2) - it is exactly the same for a server!
-  int sockfd = socket(AF_INET, SOCK_STREAM, 0);
-
-  if(sockfd < 0)
+  if(sockfd < 0)//If the socket descriptor is negative then it failed to create a new socket
   {
     fprintf(stderr,"Failed creating socket\n");
   }
@@ -48,47 +40,39 @@ int main(int argc, char *argv[]){
   server.sin_family = AF_INET;
   server.sin_addr.s_addr = INADDR_ANY;
   server.sin_port = htons(atoi(argv[1])); // this time 1st arg is port#
-  //bzero((char *) &serv_addr, sizeof(serv_addr));
-  // Next you need to BIND your socket.
-  if(bind(sockfd, (struct sockaddr *)&server, sizeof(server)) < 0)
+
+  if(bind(sockfd, (struct sockaddr *)&server, sizeof(server)) < 0)//Bind the socket to the specified port
   {
     fprintf(stderr,"Failed to bind\n");
   }
   else {
-    fprintf(stderr,"bound socket\n");
+    fprintf(stderr,"bound socket\n");//Print to the console saying that we have successfully bound
   }
-
-  // Right, now we are in the main server loop.
-  // YOUR CODE HERE
 
   // Start by listening
   listen(sockfd, 5);
   fprintf(stderr,"listening\n");
 
-  while(1){
+  while(1){//Continue to accept connections until the program is ended
 
     // you need to accept the connection request
-    int clientlen = sizeof(client);
-    newsockfd = accept(sockfd, (struct sockaddr *) &client, &clientlen);
+    int clientlen = sizeof(client);//Get the size of the client structure
+    newsockfd = accept(sockfd, (struct sockaddr *) &client, &clientlen);//Accept a new connection and return its descriptor
     if(newsockfd < 0)
     {
       fprintf(stderr,"ERROR accepting\n");
       exit(1);
     }
-    else{
-      fprintf(stderr,"accepted connection\n");
-    }
+
     // the next call makes a new child process that will actually handle the client.
     id = fork();
-    //printf("Fork: %d\n",id);
 
     // when id == 0, this is the child and needs to do the work for the server.
     if(id == 0)
     {
-      close(sockfd);
-      fprintf(stderr,"about to read\n");
-      processClient(newsockfd);
-      exit(0);
+    //  close(sockfd);//close the
+      processClient(newsockfd);//Read from the new client connection then send a reply
+      exit(0);//exit this client after reading and writing
     }
 
     // when if > 0, this is the parent, and it should just loop around,
@@ -99,8 +83,10 @@ int main(int argc, char *argv[]){
       exit(0);
     }
 
-    // Your code here for the child process, that will read from the connection socket, process the data
-    // write back to the socket, and then close and finally call exit(0) when done.
+    if(id > 0)
+    {
+      close(newsockfd);
+    }
 
     // Note:  make sure the parent process (id > 0) does not execute this code, but immediately loops back
     // around (via the while) to get another connection request.
@@ -113,20 +99,20 @@ int main(int argc, char *argv[]){
 void processClient(int socket)
 {
   int n;
-  char buf[256];
+  char buf[256];//Set up a buffer to read the data into
   bzero(buf, 256);
-  n = read(socket, buf, 255);
+  n = read(socket, buf, 255);//Read the data that is on this socket
 
-  if(n < 0)
+  if(n < 0)//If less that 0 then there was an error trying to read what the client sent
   {
     fprintf(stderr,"ERROR when trying to read\n");
     exit(1);
   }
 
-  printf("Message: %s\n",buf);
-  n = write(socket,"Message recieved by Server",26);
+  printf("Message: %s\n",buf);//Print out to the console what we recieved
+  n = write(socket,"Message recieved by Server",26);//Send back a reply to the current client
 
-  if(n < 0)
+  if(n < 0)//If there was an error writing then print an error and exit
   {
     fprintf(stderr,"ERROR when trying to write\n");
     exit(1);
