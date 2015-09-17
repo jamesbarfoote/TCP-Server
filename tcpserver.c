@@ -124,7 +124,7 @@ void processClient(int socket)
   }
 
   printf("Message: %s\n",buf);
-  n = write(socket,"Message recieved by Server",18);
+  n = write(socket,"Message recieved by Server",26);
 
   if(n < 0)
   {
