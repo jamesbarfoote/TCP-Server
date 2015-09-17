@@ -8,6 +8,8 @@
 
 #define bufsize 1024
 
+void processClient(int socket);
+
 void eatZombies(int n){
   // This function removes the zombie process state left
   // after the child exits. Learn about this in NWEN 301!
@@ -16,10 +18,11 @@ void eatZombies(int n){
 }
 
 int main(int argc, char *argv[]){
-  int sock, length, msgsock, status, newsockfd;
+  int sock, length, msgsock, status, newsockfd, n;
   struct sockaddr_in server, client;
   int data;
   char buf[bufsize];
+  char ch;
 
 
   // for forking, and cleaning up zombie child state afterwards
@@ -45,7 +48,7 @@ int main(int argc, char *argv[]){
   server.sin_family = AF_INET;
   server.sin_addr.s_addr = INADDR_ANY;
   server.sin_port = htons(atoi(argv[1])); // this time 1st arg is port#
-
+  //bzero((char *) &serv_addr, sizeof(serv_addr));
   // Next you need to BIND your socket.
   if(bind(sockfd, (struct sockaddr *)&server, sizeof(server)) < 0)
   {
@@ -62,50 +65,71 @@ int main(int argc, char *argv[]){
   listen(sockfd, 5);
   fprintf(stderr,"listening\n");
 
-  //while(1){
+  while(1){
 
-  // you need to accept the connection request
-  int clientlen = sizeof(client);
-  if(newsockfd = accept(sockfd, (struct sockaddr *) &client, &clientlen) < 0)
-  {
-    fprintf(stderr,"ERROR accepting\n");
-  }
-  else{
-    fprintf(stderr,"accepted connection\n");
-  }
-  // the next call makes a new child process that will actually handle the client.
-  id = fork();
-
-  // when id == 0, this is the child and needs to do the work for the server.
-  if(id == 0)
-  {
-    data = read(newsockfd, buf, bufsize);
-    printf("Message: %s\n",buf);
-    if(data > 0){
-      fprintf(stderr,"sending ack\n");
-      data = write(newsockfd,"Message Recieved",18);
-    }
-    if (data < 0)
+    // you need to accept the connection request
+    int clientlen = sizeof(client);
+    newsockfd = accept(sockfd, (struct sockaddr *) &client, &clientlen);
+    if(newsockfd < 0)
     {
-      fprintf(stderr,"error\n");
-      error("ERROR writing to socket");
+      fprintf(stderr,"ERROR accepting\n");
+      exit(1);
+    }
+    else{
+      fprintf(stderr,"accepted connection\n");
+    }
+    // the next call makes a new child process that will actually handle the client.
+    id = fork();
+    //printf("Fork: %d\n",id);
+
+    // when id == 0, this is the child and needs to do the work for the server.
+    if(id == 0)
+    {
+      close(sockfd);
+      fprintf(stderr,"about to read\n");
+      processClient(newsockfd);
       exit(0);
     }
+
+    // when if > 0, this is the parent, and it should just loop around,
+    // when id < 0, we had an error.
+    if(id < 0)
+    {
+      fprintf(stderr,"ERROR when trying to accept\n");
+      exit(0);
+    }
+
+    // Your code here for the child process, that will read from the connection socket, process the data
+    // write back to the socket, and then close and finally call exit(0) when done.
+
+    // Note:  make sure the parent process (id > 0) does not execute this code, but immediately loops back
+    // around (via the while) to get another connection request.
+
   }
 
-  // when if > 0, this is the parent, and it should just loop around,
-  // when id < 0, we had an error.
-  if(id < 0)
+
+}
+
+void processClient(int socket)
+{
+  int n;
+  char buf[256];
+  bzero(buf, 256);
+  n = read(socket, buf, 255);
+
+  if(n < 0)
   {
-    fprintf(stderr,"ERROR when trying to accept\n");
-    exit(0);
+    fprintf(stderr,"ERROR when trying to read\n");
+    exit(1);
   }
 
-  // Your code here for the child process, that will read from the connection socket, process the data
-  // write back to the socket, and then close and finally call exit(0) when done.
+  printf("Message: %s\n",buf);
+  n = write(socket,"Message recieved by Server",18);
 
-  // Note:  make sure the parent process (id > 0) does not execute this code, but immediately loops back
-  // around (via the while) to get another connection request.
+  if(n < 0)
+  {
+    fprintf(stderr,"ERROR when trying to write\n");
+    exit(1);
+  }
 
-  //  }
 }
