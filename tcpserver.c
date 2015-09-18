@@ -5,6 +5,8 @@
 #include <signal.h>
 #include <string.h>
 #include <sys/wait.h>
+#include <unistd.h>
+
 
 #define bufsize 1024
 
@@ -44,6 +46,7 @@ int main(int argc, char *argv[]){
   if(bind(sockfd, (struct sockaddr *)&server, sizeof(server)) < 0)//Bind the socket to the specified port
   {
     fprintf(stderr,"Failed to bind\n");
+    exit(-1);
   }
   else {
     fprintf(stderr,"bound socket\n");//Print to the console saying that we have successfully bound
@@ -61,7 +64,7 @@ int main(int argc, char *argv[]){
     if(newsockfd < 0)
     {
       fprintf(stderr,"ERROR accepting\n");
-      exit(1);
+      exit(-1);
     }
 
     // the next call makes a new child process that will actually handle the client.
@@ -75,47 +78,37 @@ int main(int argc, char *argv[]){
       exit(0);//exit this client after reading and writing
     }
 
-    // when if > 0, this is the parent, and it should just loop around,
+    
     // when id < 0, we had an error.
     if(id < 0)
     {
       fprintf(stderr,"ERROR when trying to accept\n");
-      exit(0);
     }
-
-    if(id > 0)
-    {
-      close(newsockfd);
-    }
-
-    // Note:  make sure the parent process (id > 0) does not execute this code, but immediately loops back
-    // around (via the while) to get another connection request.
-
+// when if > 0, this is the parent, and it should just loop around,
   }
-
 
 }
 
 void processClient(int socket)
 {
-  int n;
   char buf[256];//Set up a buffer to read the data into
   bzero(buf, 256);
-  n = read(socket, buf, 255);//Read the data that is on this socket
-
-  if(n < 0)//If less that 0 then there was an error trying to read what the client sent
+  
+  //Read the data that is on this socket
+  if(read(socket, buf, 255) < 0)//If less that 0 then there was an error trying to read what the client sent
   {
     fprintf(stderr,"ERROR when trying to read\n");
-    exit(1);
+    exit(-1);
   }
 
   printf("Message: %s\n",buf);//Print out to the console what we recieved
-  n = write(socket,"Message recieved by Server",26);//Send back a reply to the current client
 
-  if(n < 0)//If there was an error writing then print an error and exit
+  //Send back a reply to the current client
+  if(write(socket,"Message recieved by Server",26) < 0)//If there was an error writing then print an error and exit
   {
     fprintf(stderr,"ERROR when trying to write\n");
-    exit(1);
+    exit(-1);
   }
+  close(newsockfd);//Close the socket for the current child
 
 }
